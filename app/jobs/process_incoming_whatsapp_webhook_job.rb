@@ -1,8 +1,8 @@
 class ProcessIncomingWhatsappWebhookJob < ApplicationJob
-  queue_as :webhooks
+  sidekiq_options queue: "webhooks"
 
-  # @param parsed_event [Hash] normalized payload from Whatsapp::WebhookParser
-  def perform(parsed_event:)
+  # @param parsed_event [Hash]
+  def perform(parsed_event = {})
     session = Sessions::FindOrCreate.call(parsed_event: parsed_event)
     Sessions::LockAndProcess.call(session: session, parsed_event: parsed_event)
 

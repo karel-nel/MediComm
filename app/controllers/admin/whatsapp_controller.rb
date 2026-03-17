@@ -46,6 +46,8 @@ class Admin::WhatsappController < Admin::BaseController
       :phone_number_id,
       :waba_id,
       :display_phone_number,
+      :webhook_verify_token,
+      :app_secret_ciphertext,
       :access_token_ciphertext,
       :active
     )
@@ -53,10 +55,12 @@ class Admin::WhatsappController < Admin::BaseController
 
   def sanitized_whatsapp_params
     permitted = whatsapp_params
-    return permitted unless permitted.key?(:access_token_ciphertext)
+    [ :access_token_ciphertext, :app_secret_ciphertext, :webhook_verify_token ].each do |field|
+      next unless permitted.key?(field)
+      next if permitted[field].present?
 
-    return permitted if permitted[:access_token_ciphertext].present?
-
-    permitted.except(:access_token_ciphertext)
+      permitted = permitted.except(field)
+    end
+    permitted
   end
 end

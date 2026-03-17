@@ -1,8 +1,9 @@
 class ExtractFieldCandidatesJob < ApplicationJob
-  queue_as :extraction
+  sidekiq_options queue: "extraction"
 
-  # @param intake_session_id [Integer]
-  def perform(intake_session_id:)
-    Fields::ExtractCandidates.call(intake_session_id: intake_session_id)
+  # @param payload [Hash]
+  def perform(payload = {})
+    normalized_payload = payload.to_h.with_indifferent_access
+    Fields::ExtractCandidates.call(intake_session_id: normalized_payload.fetch(:intake_session_id))
   end
 end

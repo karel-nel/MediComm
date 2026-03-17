@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_17_133000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_17_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -220,6 +220,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_133000) do
   create_table "whatsapp_accounts", force: :cascade do |t|
     t.text "access_token_ciphertext"
     t.boolean "active", default: true, null: false
+    t.text "app_secret_ciphertext"
     t.string "business_account_name"
     t.datetime "created_at", null: false
     t.string "display_phone_number", null: false
@@ -227,8 +228,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_133000) do
     t.bigint "practice_id", null: false
     t.datetime "updated_at", null: false
     t.string "waba_id", null: false
+    t.string "webhook_verify_token"
     t.index ["practice_id", "phone_number_id"], name: "index_whatsapp_accounts_on_practice_id_and_phone_number_id", unique: true
     t.index ["practice_id"], name: "index_whatsapp_accounts_on_practice_id"
+    t.index ["webhook_verify_token"], name: "index_whatsapp_accounts_on_webhook_verify_token_unique", unique: true, where: "(webhook_verify_token IS NOT NULL)"
   end
 
   add_foreign_key "exported_documents", "intake_sessions"

@@ -73,6 +73,8 @@ whatsapp_account = WhatsappAccount.create!(
   phone_number_id: "155512300001",
   waba_id: "waba-za-demo-001",
   display_phone_number: "+27 71 555 1000",
+  webhook_verify_token: "demo-verify-token-001",
+  app_secret_ciphertext: "demo-app-secret-001",
   access_token_ciphertext: "encrypted-demo-token",
   business_account_name: "MediComm Intake",
   active: true

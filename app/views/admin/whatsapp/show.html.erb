@@ -37,6 +37,10 @@
               <%= render Admin::StatusBadgeComponent.new(value: account.active? ? "connected" : "failed") %>
             </div>
             <p class="mt-2 text-xs text-slate-500">waba_id: <%= account.waba_id %></p>
+            <p class="mt-1 text-xs text-slate-500">
+              webhook verify token: <%= account.webhook_verify_token.present? ? "configured" : "not set" %> •
+              app secret: <%= account.app_secret_ciphertext.present? ? "configured" : "not set" %>
+            </p>
           </article>
         <% end %>
       </div>

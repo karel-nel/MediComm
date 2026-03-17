@@ -1,9 +1,10 @@
 class ExtractAttachmentTextJob < ApplicationJob
-  queue_as :extraction
+  sidekiq_options queue: "extraction"
 
-  # @param attachment_id [Integer]
-  def perform(attachment_id:)
-    Attachments::RunExtraction.call(attachment_id: attachment_id)
+  # @param payload [Hash]
+  def perform(payload = {})
+    normalized_payload = payload.to_h.with_indifferent_access
+    Attachments::RunExtraction.call(attachment_id: normalized_payload.fetch(:attachment_id))
 
     # TODO: emit extraction events and enqueue field candidate extraction.
   end

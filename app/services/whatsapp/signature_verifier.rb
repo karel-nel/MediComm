@@ -13,12 +13,13 @@ module Whatsapp
     end
 
     def call
-      return false if app_secret.blank? || raw_body.blank?
+      secret = app_secret.to_s.strip
+      return false if secret.blank? || raw_body.blank?
 
       signature_digest = extract_signature_digest
       return false if signature_digest.blank?
 
-      expected_signature = OpenSSL::HMAC.hexdigest("SHA256", app_secret, raw_body)
+      expected_signature = OpenSSL::HMAC.hexdigest("SHA256", secret, raw_body)
       ActiveSupport::SecurityUtils.secure_compare(signature_digest, expected_signature)
     end
 

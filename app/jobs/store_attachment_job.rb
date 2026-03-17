@@ -1,10 +1,13 @@
 class StoreAttachmentJob < ApplicationJob
-  queue_as :media
+  sidekiq_options queue: "media"
 
-  # @param attachment_id [Integer]
-  # @param source_path [String, nil]
-  def perform(attachment_id:, source_path: nil)
-    Attachments::StoreToS3.call(attachment_id: attachment_id, source_path: source_path)
+  # @param payload [Hash]
+  def perform(payload = {})
+    normalized_payload = payload.to_h.with_indifferent_access
+    Attachments::StoreToS3.call(
+      attachment_id: normalized_payload.fetch(:attachment_id),
+      source_path: normalized_payload[:source_path]
+    )
 
     # TODO: enqueue ExtractAttachmentTextJob after durable storage is confirmed.
   end

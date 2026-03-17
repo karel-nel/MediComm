@@ -33,12 +33,22 @@
         <%= f.text_field :waba_id, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
         <p class="mt-1 text-xs text-slate-500">Meta WhatsApp Business Account identifier</p>
       </div>
+      <div>
+        <%= f.label :webhook_verify_token, "Webhook Verify Token", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.password_field :webhook_verify_token, autocomplete: "off", placeholder: account.persisted? ? "Leave blank to keep existing verify token" : "Set webhook verify token", class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :app_secret_ciphertext, "Meta App Secret", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.password_field :app_secret_ciphertext, autocomplete: "off", placeholder: account.persisted? ? "Leave blank to keep existing app secret" : "Paste Meta app secret", class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
       <div class="md:col-span-2">
         <%= f.label :access_token_ciphertext, "Access Token", class: "mb-1 block text-sm font-medium text-slate-700" %>
         <%= f.password_field :access_token_ciphertext, autocomplete: "off", placeholder: account.persisted? ? "Leave blank to keep existing token" : "Paste access token", class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
         <% if account.persisted? %>
           <p class="mt-1 text-xs text-slate-500">
-            <%= account.access_token_ciphertext.present? ? "Token currently stored." : "No token currently stored." %>
+            Access token: <%= account.access_token_ciphertext.present? ? "stored" : "not set" %> |
+            Verify token: <%= account.webhook_verify_token.present? ? "stored" : "not set" %> |
+            App secret: <%= account.app_secret_ciphertext.present? ? "stored" : "not set" %>
           </p>
         <% end %>
       </div>

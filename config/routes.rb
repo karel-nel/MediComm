@@ -59,6 +59,17 @@ Rails.application.routes.draw do
     resource :whatsapp, only: [ :show, :create ], controller: :whatsapp
   end
 
+  namespace :api do
+    namespace :v1 do
+      resources :intake_sessions, only: [] do
+        member do
+          get :conversation_state
+          post :conversation_response, to: "conversation_responses#create"
+        end
+      end
+    end
+  end
+
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

@@ -1,9 +1,12 @@
 class SendWhatsappMessageJob < ApplicationJob
-  queue_as :conversation
+  sidekiq_options queue: "conversation"
 
-  # @param intake_session_id [Integer]
-  # @param message_body [String]
-  def perform(intake_session_id:, message_body:)
-    Whatsapp::SendMessage.call(intake_session_id: intake_session_id, message_body: message_body)
+  # @param payload [Hash]
+  def perform(payload = {})
+    normalized_payload = payload.to_h.with_indifferent_access
+    Whatsapp::SendMessage.call(
+      intake_session_id: normalized_payload.fetch(:intake_session_id),
+      message_body: normalized_payload.fetch(:message_body)
+    )
   end
 end
