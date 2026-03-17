@@ -1,0 +1,8 @@
+:concurrency: <%= Integer(ENV.fetch("SIDEKIQ_CONCURRENCY", 5)) %>
+:queues:
+  - [webhooks, 5]
+  - [media, 4]
+  - [extraction, 4]
+  - [conversation, 3]
+  - [notifications, 2]
+  - [default, 1]

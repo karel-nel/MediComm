@@ -1,0 +1,10 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Edit Team Member",
+  subtitle: @team_member.full_name
+) %>
+
+<%= render "form",
+  team_member: @team_member,
+  form_url: admin_team_member_path(@team_member),
+  form_method: :patch,
+  submit_label: "Save Changes" %>

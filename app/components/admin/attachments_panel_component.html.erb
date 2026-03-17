@@ -1,0 +1,21 @@
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-600">Attachments</h3>
+
+  <div class="mt-4 grid gap-3">
+    <% if @attachments.any? %>
+      <% @attachments.each do |attachment| %>
+        <article class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <p class="text-sm font-medium text-slate-900"><%= attachment.file_name %></p>
+              <p class="text-xs text-slate-500"><%= attachment.mime_type %> • <%= number_to_human_size(attachment.byte_size || 0) %></p>
+            </div>
+            <%= render Admin::StatusBadgeComponent.new(value: attachment.processing_status) %>
+          </div>
+        </article>
+      <% end %>
+    <% else %>
+      <p class="text-sm text-slate-500">No attachments uploaded for this session.</p>
+    <% end %>
+  </div>
+</section>

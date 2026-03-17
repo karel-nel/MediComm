@@ -1,0 +1,28 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Billing",
+  subtitle: "Practice subscription and usage summary"
+) %>
+
+<section class="mb-5 grid gap-4 md:grid-cols-4">
+  <%= render Admin::MetricCardComponent.new(label: "Plan", value: @summary.plan_name, support_text: "Current subscription tier", tone: :blue) %>
+  <%= render Admin::MetricCardComponent.new(label: "Base Monthly Fee", value: number_to_currency(@summary.monthly_fee, unit: "R"), support_text: "Ex VAT", tone: :teal) %>
+  <%= render Admin::MetricCardComponent.new(label: "Sessions This Month", value: @summary.current_sessions, support_text: "#{@summary.included_sessions} included", tone: :amber) %>
+  <%= render Admin::MetricCardComponent.new(label: "Estimated Total", value: number_to_currency(@summary.estimated_total, unit: "R"), support_text: "Includes estimated overage", tone: :neutral) %>
+</section>
+
+<%= render Admin::PageSectionComponent.new(
+  title: "Usage Breakdown",
+  description: "Operational estimate based on current month session throughput."
+) do %>
+  <div class="grid gap-4 md:grid-cols-2">
+    <article class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+      <p class="text-sm font-medium text-slate-800">Included Sessions</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900"><%= @summary.included_sessions %></p>
+    </article>
+    <article class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+      <p class="text-sm font-medium text-slate-800">Additional Sessions</p>
+      <p class="mt-2 text-2xl font-semibold text-slate-900"><%= @summary.additional_sessions %></p>
+      <p class="mt-1 text-xs text-slate-500">Estimated at R6 per additional session.</p>
+    </article>
+  </div>
+<% end %>

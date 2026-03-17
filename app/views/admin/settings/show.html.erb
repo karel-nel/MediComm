@@ -1,0 +1,63 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Settings",
+  subtitle: "Practice profile and contact defaults"
+) %>
+
+<section class="mb-5 grid gap-4 md:grid-cols-3">
+  <%= render Admin::MetricCardComponent.new(label: "Team Members", value: @team_member_count, support_text: "Users in this practice", tone: :blue) %>
+  <%= render Admin::MetricCardComponent.new(label: "Active Flows", value: @flow_count, support_text: "Configured intake flows", tone: :teal) %>
+  <%= render Admin::MetricCardComponent.new(label: "Practice Slug", value: current_practice.slug, support_text: "Tenant identifier", tone: :amber) %>
+</section>
+
+<%= form_with model: current_practice, url: admin_settings_path, method: :patch, class: "space-y-5" do |f| %>
+  <% if current_practice.errors.any? %>
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+      <h2 class="text-sm font-semibold text-rose-700">Please fix the following issues:</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
+        <% current_practice.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Practice Profile",
+    description: "Core practice metadata used across the admin application."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :name, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :name, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :contact_email, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.email_field :contact_email, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :timezone, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.time_zone_select :timezone, nil, { default: current_practice.timezone }, { class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" } %>
+      </div>
+      <div>
+        <%= f.label :status, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :status, options_for_select([["Active", "active"], ["Paused", "paused"]], current_practice.status), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Tenant Scope",
+    description: "Reference metadata for tenant-scoped isolation."
+  ) do %>
+    <div class="grid gap-3 text-sm text-slate-700 md:grid-cols-2">
+      <p><span class="font-semibold text-slate-900">Practice ID:</span> <%= current_practice.id %></p>
+      <p><span class="font-semibold text-slate-900">Slug:</span> <%= current_practice.slug %></p>
+      <p><span class="font-semibold text-slate-900">Created:</span> <%= l(current_practice.created_at, format: :long) %></p>
+      <p><span class="font-semibold text-slate-900">Updated:</span> <%= l(current_practice.updated_at, format: :long) %></p>
+    </div>
+  <% end %>
+
+  <div class="flex justify-end">
+    <%= f.submit "Save Settings", class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+  </div>
+<% end %>

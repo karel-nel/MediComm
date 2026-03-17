@@ -1,0 +1,44 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Correct Field Value",
+  subtitle: "#{@intake_session.patient_display_name} • #{@field_value.intake_field.label}"
+) %>
+
+<%= form_with model: [ :admin, @intake_session, @field_value ], url: admin_session_field_value_path(@intake_session, @field_value), method: :patch, class: "space-y-5" do |f| %>
+  <% if @field_value.errors.any? %>
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+      <h2 class="text-sm font-semibold text-rose-700">Please fix the following issues:</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
+        <% @field_value.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Correction",
+    description: "A new field-value version will be created and the current one superseded."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="md:col-span-2">
+        <%= f.label :canonical_value_text, "Canonical Value", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_area :canonical_value_text, value: @field_value.canonical_value_text, rows: 3, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :status, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :status, options_for_select(IntakeFieldValue.statuses.keys.map { |status| [status.humanize, status] }, @field_value.status), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <%= f.check_box :verified, checked: @field_value.verified_by_user_id.present?, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %>
+          <span>Mark as verified by me</span>
+        </label>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", admin_session_path(@intake_session), class: "rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100" %>
+    <%= f.submit "Save Correction", class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+  </div>
+<% end %>

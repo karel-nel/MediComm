@@ -1,0 +1,44 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: @attachment.file_name,
+  subtitle: "#{@attachment.mime_type} • #{number_to_human_size(@attachment.byte_size || 0)}"
+) %>
+
+<section class="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
+  <%= render Admin::PageSectionComponent.new(
+    title: "File Metadata",
+    description: "Practice-scoped file record details."
+  ) do %>
+    <div class="space-y-3 text-sm text-slate-700">
+      <p><span class="font-semibold text-slate-900">Status:</span> <%= render Admin::StatusBadgeComponent.new(value: @attachment.processing_status) %></p>
+      <p><span class="font-semibold text-slate-900">Session:</span> <%= link_to @attachment.intake_session.patient_display_name, admin_session_path(@attachment.intake_session), class: "text-blue-700 hover:text-blue-600" %></p>
+      <p><span class="font-semibold text-slate-900">Session reference:</span> <%= @attachment.intake_session.external_reference.presence || "—" %></p>
+      <p><span class="font-semibold text-slate-900">Stored key:</span> <code class="text-xs"><%= @attachment.s3_key.presence || "(not connected yet)" %></code></p>
+      <p><span class="font-semibold text-slate-900">Captured at:</span> <%= l(@attachment.created_at, format: :long) %></p>
+    </div>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Extracted Usage",
+    description: "Fields currently linked to this file as evidence."
+  ) do %>
+    <% if @related_field_values.any? %>
+      <ul class="space-y-3">
+        <% @related_field_values.each do |field_value| %>
+          <li class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+            <p class="text-sm font-medium text-slate-900"><%= field_value.intake_field.label %></p>
+            <p class="mt-1 text-sm text-slate-700"><%= field_value.canonical_value_text.presence || "No canonical value text" %></p>
+            <div class="mt-2 flex items-center gap-2">
+              <%= render Admin::StatusBadgeComponent.new(value: field_value.status) %>
+              <%= render Admin::StatusBadgeComponent.new(value: (field_value.confidence.to_f >= 0.85 ? "high" : field_value.confidence.to_f >= 0.6 ? "medium" : "low"), context: :confidence) %>
+            </div>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <%= render Admin::EmptyStateComponent.new(
+        title: "No linked fields",
+        description: "This file is captured but not yet mapped to a field value."
+      ) %>
+    <% end %>
+  <% end %>
+</section>

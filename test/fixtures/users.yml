@@ -1,0 +1,17 @@
+one:
+  practice: one
+  first_name: Owner
+  last_name: One
+  email: owner.one@example.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password123") %>
+  role: 0
+  active: true
+
+two:
+  practice: two
+  first_name: Admin
+  last_name: Two
+  email: admin.two@example.com
+  encrypted_password: <%= Devise::Encryptor.digest(User, "password123") %>
+  role: 1
+  active: true

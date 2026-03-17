@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  name: Alpha Practice
+  slug: alpha-practice
+  timezone: Africa/Johannesburg
+  contact_email: alpha@example.com
+  status: active
+
+two:
+  name: Beta Practice
+  slug: beta-practice
+  timezone: Africa/Johannesburg
+  contact_email: beta@example.com
+  status: active

@@ -1,0 +1,10 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Add Team Member",
+  subtitle: "Create a practice-scoped account"
+) %>
+
+<%= render "form",
+  team_member: @team_member,
+  form_url: admin_team_members_path,
+  form_method: :post,
+  submit_label: "Create Team Member" %>

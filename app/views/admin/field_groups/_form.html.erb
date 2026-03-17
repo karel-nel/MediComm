@@ -1,0 +1,47 @@
+<%= form_with model: @field_group, url: form_url, method: form_method, class: "space-y-5" do |f| %>
+  <% if @field_group.errors.any? %>
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+      <h2 class="text-sm font-semibold text-rose-700">Please fix the following issues:</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
+        <% @field_group.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Group Configuration",
+    description: "Groups organize fields and branching visibility."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :key, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :key, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :label, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :label, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :position, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.number_field :position, min: 0, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <%= f.check_box :repeatable, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %>
+          <span>Repeatable group</span>
+        </label>
+      </div>
+      <div class="md:col-span-2">
+        <%= label_tag "intake_field_group_visibility_rules_text", "Visibility Rules JSON", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= text_area_tag "intake_field_group[visibility_rules_text]", JSON.pretty_generate(@field_group.visibility_rules_json || {}), rows: 5, class: "w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", admin_flow_path(@flow), class: "rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100" %>
+    <%= f.submit submit_label, class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+  </div>
+<% end %>

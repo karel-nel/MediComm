@@ -1,0 +1,57 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Team",
+  subtitle: "Users in #{current_practice.name}"
+) do %>
+  <%= link_to "Add Team Member", new_admin_team_member_path, class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+<% end %>
+
+<section class="mb-5 grid gap-4 md:grid-cols-3">
+  <%= render Admin::MetricCardComponent.new(label: "Team Members", value: @team_members.count, support_text: "Users with practice access", tone: :blue) %>
+  <%= render Admin::MetricCardComponent.new(label: "Active Accounts", value: @active_count, support_text: "Currently enabled for sign-in", tone: :teal) %>
+  <%= render Admin::MetricCardComponent.new(label: "Owners", value: @owner_count, support_text: "Practice-level owner roles", tone: :amber) %>
+</section>
+
+<% if @team_members.any? %>
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-slate-700">Name</th>
+          <th class="px-4 py-3 text-left font-semibold text-slate-700">Email</th>
+          <th class="px-4 py-3 text-left font-semibold text-slate-700">Role</th>
+          <th class="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
+          <th class="px-4 py-3 text-right font-semibold text-slate-700">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        <% @team_members.each do |member| %>
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 text-slate-900"><%= member.full_name %></td>
+            <td class="px-4 py-3 text-slate-600"><%= member.email %></td>
+            <td class="px-4 py-3">
+              <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"><%= member.role.humanize %></span>
+            </td>
+            <td class="px-4 py-3">
+              <%= render Admin::StatusBadgeComponent.new(value: member.active? ? "active" : "failed") %>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex justify-end gap-2">
+                <%= link_to "Edit", edit_admin_team_member_path(member), class: "rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" %>
+                <% if member.active? %>
+                  <%= button_to "Deactivate", deactivate_admin_team_member_path(member), method: :patch, class: "rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50" %>
+                <% else %>
+                  <%= button_to "Reactivate", reactivate_admin_team_member_path(member), method: :patch, class: "rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50" %>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </section>
+<% else %>
+  <%= render Admin::EmptyStateComponent.new(
+    title: "No team members found",
+    description: "Invite users in a later phase. This page remains practice-scoped."
+  ) %>
+<% end %>

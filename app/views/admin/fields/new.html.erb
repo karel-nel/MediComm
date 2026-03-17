@@ -1,0 +1,9 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Add Field",
+  subtitle: @flow.name
+) %>
+
+<%= render "form",
+  submit_label: "Create Field",
+  form_url: admin_flow_fields_path(@flow),
+  form_method: :post %>

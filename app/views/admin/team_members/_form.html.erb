@@ -1,0 +1,63 @@
+<%= form_with model: team_member, url: form_url, method: form_method, class: "space-y-5" do |f| %>
+  <% if team_member.errors.any? %>
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+      <h2 class="text-sm font-semibold text-rose-700">Please fix the following issues:</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
+        <% team_member.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Profile",
+    description: "Practice-scoped team member details."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :first_name, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :first_name, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :last_name, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :last_name, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :email, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.email_field :email, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :role, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :role, options_for_select(User.roles.keys.map { |role| [role.humanize, role] }, team_member.role), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 md:col-span-2">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <%= f.check_box :active, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %>
+          <span>Account active</span>
+        </label>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Credentials",
+    description: form_method.to_s == "post" ? "Set an initial password for this team member." : "Leave blank to keep current password."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :password, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.password_field :password, autocomplete: "new-password", class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :password_confirmation, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.password_field :password_confirmation, autocomplete: "new-password", class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", admin_team_members_path, class: "rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100" %>
+    <%= f.submit submit_label, class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+  </div>
+<% end %>

@@ -1,0 +1,87 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: @intake_session.patient_display_name,
+  subtitle: "#{@intake_session.patient_phone_e164} • #{@intake_session.intake_flow.name}"
+) %>
+
+<section class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <%= render Admin::StatusBadgeComponent.new(value: @intake_session.status) %>
+        <% if @intake_session.session_review.present? %>
+          <%= render Admin::StatusBadgeComponent.new(value: @intake_session.session_review.status) %>
+        <% end %>
+      </div>
+      <p class="mt-2 text-sm text-slate-600">
+        Started <%= @intake_session.started_at ? l(@intake_session.started_at, format: :short) : "not started yet" %> •
+        Last updated <%= time_ago_in_words(@intake_session.updated_at) %> ago
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <%= button_to "Approve", approve_review_admin_session_path(@intake_session), method: :patch, class: "rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500" %>
+      <%= button_to "Request Follow-up", request_follow_up_admin_session_path(@intake_session), method: :patch, class: "rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-400" %>
+      <% if @intake_session.status_completed? || @intake_session.status_awaiting_patient? %>
+        <%= button_to "Reopen", reopen_admin_session_path(@intake_session), method: :patch, class: "rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <div class="h-2.5 rounded-full bg-slate-100">
+      <div class="h-2.5 rounded-full bg-teal-500" style="width: <%= @detail.progress_percentage %>%"></div>
+    </div>
+    <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+      <span><%= @detail.completion_label %></span>
+      <span><%= @detail.missing_summary %></span>
+    </div>
+  </div>
+
+  <div class="mt-5 grid gap-3 md:grid-cols-2">
+    <%= form_with url: update_review_admin_session_path(@intake_session), method: :patch, class: "rounded-xl border border-slate-200 bg-slate-50 p-3" do |f| %>
+      <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-600">Review Notes</h3>
+      <div class="mt-2 grid gap-2">
+        <%= f.select "session_review[status]", options_for_select(SessionReview.statuses.keys.map { |status| [status.humanize, status] }, @intake_session.session_review&.status || "pending"), {}, class: "rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-100" %>
+        <%= f.text_area "session_review[notes]", value: @intake_session.session_review&.notes, rows: 2, placeholder: "Add reviewer notes", class: "rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-100" %>
+        <%= f.submit "Save Review", class: "rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500" %>
+      </div>
+    <% end %>
+
+    <%= form_with url: assign_owner_admin_session_path(@intake_session), method: :patch, class: "rounded-xl border border-slate-200 bg-slate-50 p-3" do |f| %>
+      <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-600">Session Owner</h3>
+      <div class="mt-2 grid gap-2">
+        <%= f.select :initiated_by_user_id, options_for_select(current_practice.users.order(:first_name, :last_name).map { |user| [user.full_name, user.id] }, @intake_session.initiated_by_user_id), {}, class: "rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-100" %>
+        <%= f.submit "Assign Owner", class: "rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100" %>
+      </div>
+    <% end %>
+  </div>
+</section>
+
+<section class="grid gap-5 xl:grid-cols-[1.25fr_1fr]">
+  <div class="space-y-4">
+    <% @detail.field_groups.each do |group_state| %>
+      <%= render Admin::FieldGroupCardComponent.new(group_state: group_state, intake_session: @intake_session) %>
+    <% end %>
+  </div>
+
+  <div class="space-y-4">
+    <nav class="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+      <% { "transcript" => "Transcript", "attachments" => "Files", "audit" => "Audit" }.each do |tab, label| %>
+        <%= link_to admin_session_path(@intake_session, tab: tab), class: [
+          "rounded-xl px-3 py-1.5 text-sm font-medium transition",
+          @active_tab == tab ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"
+        ] do %>
+          <%= label %>
+        <% end %>
+      <% end %>
+    </nav>
+
+    <% if @active_tab == "transcript" %>
+      <%= render Admin::TranscriptPanelComponent.new(messages: @detail.messages) %>
+    <% elsif @active_tab == "attachments" %>
+      <%= render Admin::AttachmentsPanelComponent.new(attachments: @detail.attachments) %>
+    <% else %>
+      <%= render Admin::AuditPanelComponent.new(events: @detail.events) %>
+    <% end %>
+  </div>
+</section>

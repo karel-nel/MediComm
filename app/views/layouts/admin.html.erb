@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "MediComm Admin" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+  </head>
+
+  <body class="bg-slate-100 text-slate-900 antialiased">
+    <div class="min-h-screen lg:grid lg:grid-cols-[17rem_1fr]">
+      <%= render Admin::SidebarComponent.new(current_path: request.path, practice: current_practice) %>
+
+      <div class="min-w-0">
+        <%= render Admin::TopbarComponent.new(user: current_user, practice: current_practice) %>
+        <main class="px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+          <%= render "shared/flash" %>
+          <%= yield %>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

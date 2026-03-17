@@ -1,0 +1,27 @@
+<aside class="sticky top-0 hidden h-screen border-r border-slate-200 bg-white/90 px-4 py-6 backdrop-blur lg:block">
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">MediComm</p>
+    <p class="mt-2 truncate text-lg font-semibold text-slate-900"><%= practice_name %></p>
+  </div>
+
+  <nav class="space-y-1.5">
+    <% nav_items.each do |item| %>
+      <% active = active?(item) %>
+      <%= link_to item.path, class: [
+        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+        active ? "bg-teal-50 text-teal-800 ring-1 ring-teal-100" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+      ] do %>
+        <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg border text-xs font-semibold <%= active ? 'border-teal-200 bg-teal-100 text-teal-800' : 'border-slate-200 bg-slate-50 text-slate-500 group-hover:border-slate-300 group-hover:text-slate-700' %>">
+          <%= item.label.first %>
+        </span>
+        <span><%= item.label %></span>
+      <% end %>
+    <% end %>
+  </nav>
+
+  <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Environment</p>
+    <p class="mt-2 text-sm font-medium text-slate-800">Operations workspace</p>
+    <p class="mt-1 text-xs text-slate-600">Tenant-scoped admin MVP for sessions, flows, files, and configuration.</p>
+  </div>
+</aside>

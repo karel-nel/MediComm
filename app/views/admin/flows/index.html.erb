@@ -1,0 +1,43 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Flows",
+  subtitle: "Configure intake definitions for this practice"
+) do %>
+  <%= link_to "New Flow", new_admin_flow_path, class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+<% end %>
+
+<% if @flows.any? %>
+  <section class="grid gap-4 md:grid-cols-2">
+    <% @flows.each do |flow| %>
+      <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-base font-semibold text-slate-900"><%= flow.name %></h2>
+          <%= render Admin::StatusBadgeComponent.new(value: flow.status) %>
+        </div>
+        <p class="mt-2 text-sm text-slate-600"><%= flow.description %></p>
+        <div class="mt-4 grid grid-cols-2 gap-2 text-xs text-slate-500">
+          <p><span class="font-medium text-slate-700"><%= flow.intake_field_groups.count %></span> groups</p>
+          <p><span class="font-medium text-slate-700"><%= flow.intake_fields.count %></span> fields</p>
+          <p>Language: <span class="text-slate-700"><%= flow.default_language %></span></p>
+          <p>Tone: <span class="text-slate-700"><%= flow.tone_preset %></span></p>
+        </div>
+        <div class="mt-4 flex gap-2">
+          <%= link_to "View", admin_flow_path(flow), class: "rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" %>
+          <%= link_to "Edit", edit_admin_flow_path(flow), class: "rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" %>
+          <% if flow.status_draft? %>
+            <%= button_to "Publish", publish_admin_flow_path(flow), method: :patch, class: "rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50" %>
+          <% elsif flow.status_published? %>
+            <%= button_to "Draft", revert_to_draft_admin_flow_path(flow), method: :patch, class: "rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50" %>
+          <% end %>
+          <% unless flow.status_archived? %>
+            <%= button_to "Archive", archive_admin_flow_path(flow), method: :patch, class: "rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50" %>
+          <% end %>
+        </div>
+      </article>
+    <% end %>
+  </section>
+<% else %>
+  <%= render Admin::EmptyStateComponent.new(
+    title: "No intake flows yet",
+    description: "Create and publish your first field-based intake flow to start collecting sessions."
+  ) %>
+<% end %>

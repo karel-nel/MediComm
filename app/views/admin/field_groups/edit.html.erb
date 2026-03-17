@@ -1,0 +1,9 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Edit Field Group",
+  subtitle: @field_group.label
+) %>
+
+<%= render "form",
+  submit_label: "Save Group",
+  form_url: admin_flow_field_group_path(@flow, @field_group),
+  form_method: :patch %>

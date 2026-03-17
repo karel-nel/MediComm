@@ -1,0 +1,10 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Add WhatsApp Account",
+  subtitle: "Configure inbound channel identifiers"
+) %>
+
+<%= render "form",
+  account: @account,
+  form_url: admin_whatsapp_path,
+  form_method: :post,
+  submit_label: "Create Account" %>

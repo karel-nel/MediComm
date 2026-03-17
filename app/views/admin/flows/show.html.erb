@@ -1,0 +1,111 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: @flow.name,
+  subtitle: "#{@flow.flow_type.humanize} • #{@flow.default_language}"
+) do %>
+  <div class="flex flex-wrap gap-2">
+    <%= link_to "Edit Flow", edit_admin_flow_path(@flow), class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+    <% if @flow.status_draft? %>
+      <%= button_to "Publish", publish_admin_flow_path(@flow), method: :patch, class: "rounded-xl border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50" %>
+    <% elsif @flow.status_published? %>
+      <%= button_to "Move to Draft", revert_to_draft_admin_flow_path(@flow), method: :patch, class: "rounded-xl border border-amber-200 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50" %>
+    <% end %>
+    <% unless @flow.status_archived? %>
+      <%= button_to "Archive", archive_admin_flow_path(@flow), method: :patch, class: "rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50" %>
+    <% end %>
+  </div>
+<% end %>
+
+<%= render Admin::PageSectionComponent.new(
+  title: "Flow Settings",
+  description: "Core operational settings used by the deterministic intake engine."
+) do %>
+  <div class="grid gap-4 md:grid-cols-2">
+    <div class="space-y-2 text-sm text-slate-700">
+      <p><span class="font-semibold text-slate-900">Status:</span> <%= render Admin::StatusBadgeComponent.new(value: @flow.status) %></p>
+      <p><span class="font-semibold text-slate-900">Created by:</span> <%= @flow.created_by&.full_name.presence || "Unknown" %></p>
+      <p><span class="font-semibold text-slate-900">Default language:</span> <%= @flow.default_language %></p>
+      <p><span class="font-semibold text-slate-900">Tone preset:</span> <%= @flow.tone_preset.humanize %></p>
+    </div>
+    <div class="space-y-2 text-sm text-slate-700">
+      <p><span class="font-semibold text-slate-900">Skip policy:</span> <%= @flow.allow_skip_by_default? ? "Allow skip by default" : "Require explicit completion" %></p>
+      <p><span class="font-semibold text-slate-900">Completion email:</span> <%= @flow.completion_email_enabled? ? "Enabled" : "Disabled" %></p>
+      <p><span class="font-semibold text-slate-900">Recipients:</span> <%= @presenter.completion_recipients_text.presence || "None configured" %></p>
+      <p><span class="font-semibold text-slate-900">Extraction policy:</span> <%= @presenter.extraction_policy.humanize %></p>
+    </div>
+  </div>
+  <p class="mt-4 text-sm text-slate-600"><%= @flow.description.presence || "No description provided." %></p>
+<% end %>
+
+<%= render Admin::PageSectionComponent.new(
+  title: "Field Definitions",
+  description: "Grouped fields and metadata that drive session completion and review."
+) do %>
+  <div class="mb-4 flex flex-wrap gap-2">
+    <%= link_to "Add Field Group", new_admin_flow_field_group_path(@flow), class: "rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" %>
+    <%= link_to "Add Field", new_admin_flow_field_path(@flow), class: "rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" %>
+  </div>
+  <% if @presenter.grouped_fields.any? %>
+    <div class="space-y-4">
+      <% @presenter.grouped_fields.each do |entry| %>
+        <article class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-semibold text-slate-800"><%= entry.group&.label || "Ungrouped Fields" %></h3>
+            <% if entry.group.present? %>
+              <div class="flex gap-1">
+                <%= button_to "Up", move_admin_flow_field_group_path(@flow, entry.group, direction: "up"), method: :patch, class: "rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100" %>
+                <%= button_to "Down", move_admin_flow_field_group_path(@flow, entry.group, direction: "down"), method: :patch, class: "rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100" %>
+                <%= link_to "Edit", edit_admin_flow_field_group_path(@flow, entry.group), class: "rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100" %>
+                <%= button_to "Archive", archive_admin_flow_field_group_path(@flow, entry.group), method: :patch, class: "rounded border border-rose-200 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50" %>
+              </div>
+            <% end %>
+          </div>
+          <div class="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Field</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Type</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Required</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Extraction</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Priority</th>
+                  <th class="px-3 py-2 text-right font-semibold text-slate-700">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <% entry.fields.each do |field| %>
+                  <tr>
+                    <td class="px-3 py-2">
+                      <p class="font-medium text-slate-900"><%= field.label %></p>
+                      <p class="text-xs text-slate-500"><%= field.key %></p>
+                    </td>
+                    <td class="px-3 py-2 text-slate-700"><%= field.field_type %></td>
+                    <td class="px-3 py-2">
+                      <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                        <%= field.required? ? "Required" : "Optional" %>
+                      </span>
+                    </td>
+                    <td class="px-3 py-2"><%= render Admin::StatusBadgeComponent.new(value: field.extraction_enabled? ? "active" : "disabled") %></td>
+                    <td class="px-3 py-2 text-slate-700"><%= field.ask_priority %></td>
+                    <td class="px-3 py-2">
+                      <div class="flex justify-end gap-1">
+                        <%= button_to "Up", move_admin_flow_field_path(@flow, field, direction: "up"), method: :patch, class: "rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100" %>
+                        <%= button_to "Down", move_admin_flow_field_path(@flow, field, direction: "down"), method: :patch, class: "rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100" %>
+                        <%= link_to "Edit", edit_admin_flow_field_path(@flow, field), class: "rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100" %>
+                        <%= button_to "Archive", archive_admin_flow_field_path(@flow, field), method: :patch, class: "rounded border border-rose-200 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50" %>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      <% end %>
+    </div>
+  <% else %>
+    <%= render Admin::EmptyStateComponent.new(
+      title: "No fields configured",
+      description: "Add field groups and fields to enable structured intake for this flow."
+    ) %>
+  <% end %>
+<% end %>

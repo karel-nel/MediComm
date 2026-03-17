@@ -1,0 +1,82 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "New Flow",
+  subtitle: "Create a practice-scoped intake flow"
+) %>
+
+<%= form_with model: @flow, url: admin_flows_path, method: :post, class: "space-y-5" do |f| %>
+  <% if @flow.errors.any? %>
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+      <h2 class="text-sm font-semibold text-rose-700">Please fix the following issues:</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
+        <% @flow.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "General Settings",
+    description: "Practice-visible metadata for this intake flow."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :name, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :name, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :flow_type, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :flow_type, options_for_select(IntakeFlow::FLOW_TYPES.map { |type| [type.humanize, type] }, @flow.flow_type), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :status, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :status, options_for_select(IntakeFlow.statuses.keys.map { |status| [status.humanize, status] }, @flow.status), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :default_language, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :default_language, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="md:col-span-2">
+        <%= f.label :description, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_area :description, rows: 3, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Conversation Settings",
+    description: "Language/tone defaults plus skip and completion email policy."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :tone_preset, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :tone_preset, options_for_select(IntakeFlow::TONE_PRESETS.map { |tone| [tone.humanize, tone] }, @flow.tone_preset), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <%= f.check_box :allow_skip_by_default, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %>
+          <span>Allow optional skip by default</span>
+        </label>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 md:col-span-2">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <%= f.check_box :completion_email_enabled, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %>
+          <span>Enable completion email summary</span>
+        </label>
+      </div>
+      <div class="md:col-span-2">
+        <%= label_tag "intake_flow_completion_email_recipients_text", "Completion Email Recipients (comma-separated)", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= text_area_tag "intake_flow[completion_email_recipients_text]", @presenter.completion_recipients_text, rows: 2, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="md:col-span-2">
+        <%= label_tag "intake_flow_extraction_policy", "Extraction Policy", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= select_tag "intake_flow[extraction_policy]", options_for_select([["Respect field-level settings", "mixed"], ["Enable extraction for all fields", "enabled"], ["Disable extraction for all fields", "disabled"]], "mixed"), class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", admin_flows_path, class: "rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100" %>
+    <%= f.submit "Create Flow", class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+  </div>
+<% end %>

@@ -1,0 +1,140 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Edit #{@flow.name}",
+  subtitle: "Update flow settings and field-level intake configuration"
+) %>
+
+<%= form_with model: @flow, url: admin_flow_path(@flow), method: :patch, class: "space-y-5" do |f| %>
+  <% if @flow.errors.any? %>
+    <section class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4">
+      <h2 class="text-sm font-semibold text-rose-700">Please fix the following issues:</h2>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-700">
+        <% @flow.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "General Settings",
+    description: "Practice-visible metadata for this intake flow."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :name, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :name, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :flow_type, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :flow_type, options_for_select(IntakeFlow::FLOW_TYPES.map { |type| [type.humanize, type] }, @flow.flow_type), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :status, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :status, options_for_select(IntakeFlow.statuses.keys.map { |status| [status.humanize, status] }, @flow.status), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div>
+        <%= f.label :default_language, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_field :default_language, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="md:col-span-2">
+        <%= f.label :description, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.text_area :description, rows: 3, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+    </div>
+  <% end %>
+
+  <%= render Admin::PageSectionComponent.new(
+    title: "Conversation Settings",
+    description: "Language/tone defaults plus skip and completion email policy."
+  ) do %>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div>
+        <%= f.label :tone_preset, class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= f.select :tone_preset, options_for_select(IntakeFlow::TONE_PRESETS.map { |tone| [tone.humanize, tone] }, @flow.tone_preset), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <%= f.check_box :allow_skip_by_default, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %>
+          <span>Allow optional skip by default</span>
+        </label>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 md:col-span-2">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
+          <%= f.check_box :completion_email_enabled, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %>
+          <span>Enable completion email summary</span>
+        </label>
+      </div>
+      <div class="md:col-span-2">
+        <%= label_tag "intake_flow_completion_email_recipients_text", "Completion Email Recipients (comma-separated)", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= text_area_tag "intake_flow[completion_email_recipients_text]", @presenter.completion_recipients_text, rows: 2, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+      <div class="md:col-span-2">
+        <%= label_tag "intake_flow_extraction_policy", "Extraction Policy", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <%= select_tag "intake_flow[extraction_policy]", options_for_select([["Respect field-level settings", "mixed"], ["Enable extraction for all fields", "enabled"], ["Disable extraction for all fields", "disabled"]], @presenter.extraction_policy), class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+      </div>
+    </div>
+  <% end %>
+
+<%= render Admin::PageSectionComponent.new(
+  title: "Field Configuration",
+  description: "Field-based model with grouped metadata. Not a script-step editor."
+) do %>
+  <% if @presenter.grouped_fields.any? %>
+    <div class="space-y-4">
+      <% @presenter.grouped_fields.each do |entry| %>
+        <article class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+          <h3 class="text-sm font-semibold text-slate-800"><%= entry.group&.label || "Ungrouped Fields" %></h3>
+          <div class="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table class="min-w-[980px] divide-y divide-slate-200 text-sm">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Field</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Type</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Required</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Extraction</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Source Preference</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Ask Priority</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Active</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <% entry.fields.each do |field| %>
+                  <%= f.fields_for :intake_fields, field, child_index: field.id do |ff| %>
+                    <%= ff.hidden_field :id %>
+                    <tr>
+                      <td class="px-3 py-2">
+                        <p class="font-medium text-slate-900"><%= field.label %></p>
+                        <p class="text-xs text-slate-500"><%= field.key %></p>
+                      </td>
+                      <td class="px-3 py-2 text-slate-700"><%= field.field_type %></td>
+                      <td class="px-3 py-2"><%= ff.check_box :required, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %></td>
+                      <td class="px-3 py-2"><%= ff.check_box :extraction_enabled, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %></td>
+                      <td class="px-3 py-2">
+                        <%= ff.select :source_preference, options_for_select(IntakeField::SOURCE_PREFERENCES.map { |option| [option.humanize, option] }, field.source_preference), {}, class: "rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-100" %>
+                      </td>
+                      <td class="px-3 py-2">
+                        <%= ff.number_field :ask_priority, min: 0, class: "w-20 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-100" %>
+                      </td>
+                      <td class="px-3 py-2"><%= ff.check_box :active, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %></td>
+                    </tr>
+                  <% end %>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      <% end %>
+    </div>
+  <% else %>
+    <%= render Admin::EmptyStateComponent.new(
+      title: "No editable fields",
+      description: "This flow has no field definitions yet. Add field groups and fields in the next iteration."
+    ) %>
+  <% end %>
+<% end %>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancel", admin_flow_path(@flow), class: "rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100" %>
+    <%= f.submit "Save Flow Changes", class: "rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500" %>
+  </div>
+<% end %>

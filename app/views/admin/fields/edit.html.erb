@@ -1,0 +1,9 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Edit Field",
+  subtitle: @field.label
+) %>
+
+<%= render "form",
+  submit_label: "Save Field",
+  form_url: admin_flow_field_path(@flow, @field),
+  form_method: :patch %>

@@ -1,0 +1,58 @@
+<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200">
+    <thead class="bg-slate-50">
+      <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+        <th class="px-4 py-3">Patient</th>
+        <th class="px-4 py-3">Flow</th>
+        <th class="px-4 py-3">Status</th>
+        <th class="px-4 py-3">Confidence</th>
+        <th class="px-4 py-3">Progress</th>
+        <th class="px-4 py-3">Missing</th>
+        <th class="px-4 py-3">Owner</th>
+        <th class="px-4 py-3">Updated</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      <% if @sessions.any? %>
+        <% @sessions.each do |session| %>
+          <% confidence = confidence_bucket(session) %>
+          <% progress = progress_ratio(session) %>
+          <tr class="hover:bg-slate-50/80">
+            <td class="px-4 py-3">
+              <p class="text-sm font-semibold text-slate-900"><%= session.patient_display_name %></p>
+              <p class="text-xs text-slate-500"><%= session.patient_phone_e164 %></p>
+            </td>
+            <td class="px-4 py-3 text-sm text-slate-700"><%= session.intake_flow.name %></td>
+            <td class="px-4 py-3">
+              <%= render Admin::StatusBadgeComponent.new(value: session.status) %>
+            </td>
+            <td class="px-4 py-3">
+              <%= render Admin::StatusBadgeComponent.new(value: confidence, context: :confidence) %>
+            </td>
+            <td class="px-4 py-3">
+              <div class="w-32">
+                <div class="h-2 rounded-full bg-slate-100">
+                  <div class="h-2 rounded-full bg-teal-500" style="width: <%= (progress * 100).round %>%"></div>
+                </div>
+                <p class="mt-1 text-xs text-slate-500"><%= progress_label(session) %></p>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-xs font-medium text-slate-600"><%= missing_summary(session) %></td>
+            <td class="px-4 py-3 text-sm text-slate-700"><%= session.initiated_by_user.full_name %></td>
+            <td class="px-4 py-3 text-xs text-slate-500"><%= time_ago_in_words(session.updated_at) %> ago</td>
+            <td class="px-4 py-3 text-right">
+              <%= link_to "Open", admin_session_path(session), class: "inline-flex rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100" %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="9" class="px-4 py-8 text-center text-sm text-slate-500">
+            No sessions match your filters.
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</section>

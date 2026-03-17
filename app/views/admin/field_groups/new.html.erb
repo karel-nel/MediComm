@@ -1,0 +1,9 @@
+<%= render Admin::PageHeaderComponent.new(
+  title: "Add Field Group",
+  subtitle: @flow.name
+) %>
+
+<%= render "form",
+  submit_label: "Create Group",
+  form_url: admin_flow_field_groups_path(@flow),
+  form_method: :post %>
