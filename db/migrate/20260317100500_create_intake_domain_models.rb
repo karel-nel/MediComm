@@ -1,6 +1,6 @@
 class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
   def change
-    create_table :whatsapp_accounts do |t|
+    create_table :whatsapp_accounts, id: :uuid do |t|
       t.references :practice, null: false, foreign_key: true
       t.string :phone_number_id, null: false
       t.string :waba_id, null: false
@@ -13,7 +13,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     end
     add_index :whatsapp_accounts, [ :practice_id, :phone_number_id ], unique: true
 
-    create_table :intake_flows do |t|
+    create_table :intake_flows, id: :uuid do |t|
       t.references :practice, null: false, foreign_key: true
       t.references :created_by, null: false, foreign_key: { to_table: :users }
       t.string :name, null: false
@@ -32,7 +32,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     add_index :intake_flows, [ :practice_id, :status ]
     add_index :intake_flows, [ :practice_id, :name ]
 
-    create_table :intake_field_groups do |t|
+    create_table :intake_field_groups, id: :uuid do |t|
       t.references :intake_flow, null: false, foreign_key: true
       t.string :key, null: false
       t.string :label, null: false
@@ -45,7 +45,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     add_index :intake_field_groups, [ :intake_flow_id, :key ], unique: true
     add_index :intake_field_groups, [ :intake_flow_id, :position ]
 
-    create_table :intake_fields do |t|
+    create_table :intake_fields, id: :uuid do |t|
       t.references :intake_flow, null: false, foreign_key: true
       t.references :intake_field_group, foreign_key: true
       t.string :key, null: false
@@ -69,7 +69,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     add_index :intake_fields, [ :intake_flow_id, :ask_priority ]
     add_index :intake_fields, [ :intake_flow_id, :active ]
 
-    create_table :intake_sessions do |t|
+    create_table :intake_sessions, id: :uuid do |t|
       t.references :practice, null: false, foreign_key: true
       t.references :intake_flow, null: false, foreign_key: true
       t.references :whatsapp_account, null: false, foreign_key: true
@@ -89,7 +89,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     add_index :intake_sessions, :patient_phone_e164
     add_index :intake_sessions, :external_reference
 
-    create_table :intake_messages do |t|
+    create_table :intake_messages, id: :uuid do |t|
       t.references :intake_session, null: false, foreign_key: true
       t.integer :direction, null: false, default: 0
       t.string :provider_message_id
@@ -101,7 +101,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     add_index :intake_messages, [ :intake_session_id, :created_at ]
     add_index :intake_messages, :provider_message_id, unique: true, where: "provider_message_id IS NOT NULL"
 
-    create_table :intake_attachments do |t|
+    create_table :intake_attachments, id: :uuid do |t|
       t.references :intake_session, null: false, foreign_key: true
       t.references :intake_message, foreign_key: true
       t.string :mime_type, null: false
@@ -114,7 +114,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     end
     add_index :intake_attachments, [ :intake_session_id, :created_at ]
 
-    create_table :intake_field_values do |t|
+    create_table :intake_field_values, id: :uuid do |t|
       t.references :intake_session, null: false, foreign_key: true
       t.references :intake_field, null: false, foreign_key: true
       t.references :source_message, foreign_key: { to_table: :intake_messages }
@@ -130,7 +130,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     add_index :intake_field_values, [ :intake_session_id, :intake_field_id ]
     add_index :intake_field_values, [ :intake_session_id, :status ]
 
-    create_table :intake_events do |t|
+    create_table :intake_events, id: :uuid do |t|
       t.references :intake_session, null: false, foreign_key: true
       t.string :event_type, null: false
       t.jsonb :payload_json, null: false, default: {}
@@ -140,7 +140,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     add_index :intake_events, [ :intake_session_id, :created_at ]
     add_index :intake_events, :event_type
 
-    create_table :session_reviews do |t|
+    create_table :session_reviews, id: :uuid do |t|
       t.references :intake_session, null: false, foreign_key: true, index: { unique: true }
       t.references :reviewer, null: false, foreign_key: { to_table: :users }
       t.integer :status, null: false, default: 0
@@ -151,7 +151,7 @@ class CreateIntakeDomainModels < ActiveRecord::Migration[8.1]
     end
     add_index :session_reviews, :status
 
-    create_table :exported_documents do |t|
+    create_table :exported_documents, id: :uuid do |t|
       t.references :intake_session, null: false, foreign_key: true
       t.string :document_type, null: false, default: "completion_summary"
       t.string :storage_key

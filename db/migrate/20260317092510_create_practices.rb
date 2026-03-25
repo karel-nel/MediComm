@@ -1,6 +1,6 @@
 class CreatePractices < ActiveRecord::Migration[8.1]
   def change
-    create_table :practices do |t|
+    create_table :practices, id: :uuid do |t|
       t.string :name, null: false
       t.string :slug, null: false
       t.string :timezone, null: false, default: "Africa/Johannesburg"

@@ -28,10 +28,10 @@ development:
   # To create additional roles in PostgreSQL see `$ createuser --help`.
   # When left blank, PostgreSQL will use the default role. This is
   # the same name as the operating system user running Rails.
-  #username: medicomm
+  username: postgres
 
   # The password associated with the PostgreSQL role (username).
-  #password:
+  password: postgres
 
   # Connect on a TCP socket. Omitted by default since the client uses a
   # domain socket that doesn't need configuration. Windows does not have
@@ -57,6 +57,10 @@ development:
 test:
   <<: *default
   database: medicomm_test
+
+  username: postgres
+  # The password associated with the PostgreSQL role (username).
+  password: postgres
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is

@@ -41,8 +41,8 @@
   description: "Grouped fields and metadata that drive session completion and review."
 ) do %>
   <div class="mb-4 flex flex-wrap gap-2">
-    <%= link_to "Add Field Group", new_admin_flow_field_group_path(@flow), class: "rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" %>
-    <%= link_to "Add Field", new_admin_flow_field_path(@flow), class: "rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100" %>
+    <%= link_to "Add Field Group", new_admin_flow_field_group_path(@flow), class: "rounded-lg border border-blue-400 px-3 py-1.5 text-xs font-medium text-blue-800 hover:bg-slate-100" %>
+    <%= link_to "Add Field", new_admin_flow_field_path(@flow), class: "rounded-lg border border-blue-400 px-3 py-1.5 text-xs font-medium text-blue-800 hover:bg-slate-100" %>
   </div>
   <% if @presenter.grouped_fields.any? %>
     <div class="space-y-4">
