@@ -1,7 +1,10 @@
+require "base64"
+
 module Conversation
   class BuildN8nRequest
     TRANSCRIPT_LIMIT = 20
     ATTACHMENT_LIMIT = 10
+    ATTACHMENT_BASE64_MAX_BYTES = 3 * 1024 * 1024
 
     def self.call(intake_session:, source_message:)
       new(intake_session: intake_session, source_message: source_message).call
@@ -233,6 +236,8 @@ module Conversation
         .limit(ATTACHMENT_LIMIT)
         .reverse
         .map do |attachment|
+          base64_content = encoded_attachment_content(attachment)
+
           {
             id: attachment.id,
             intake_message_id: attachment.intake_message_id,
@@ -241,6 +246,10 @@ module Conversation
             byte_size: attachment.byte_size,
             s3_key: attachment.s3_key,
             processing_status: attachment.processing_status,
+            content_encoding: base64_content[:encoding],
+            content_base64: base64_content[:content_base64],
+            content_status: base64_content[:status],
+            content_error: base64_content[:error],
             created_at: attachment.created_at&.iso8601
           }
         end
@@ -250,6 +259,47 @@ module Conversation
       {
         conversation_state_path: "/api/v1/intake_sessions/#{intake_session.id}/conversation_state",
         conversation_response_path: "/api/v1/intake_sessions/#{intake_session.id}/conversation_response"
+      }
+    end
+
+    def encoded_attachment_content(attachment)
+      return content_error_payload("missing_storage_key") if attachment.s3_key.blank?
+
+      file_path = resolve_attachment_file_path(attachment.s3_key)
+      return content_error_payload("missing_local_file") unless file_path.present? && File.exist?(file_path)
+
+      bytes = File.binread(file_path)
+      max_bytes = max_attachment_base64_bytes
+      return content_error_payload("attachment_too_large") if bytes.bytesize > max_bytes
+
+      {
+        encoding: "base64",
+        content_base64: Base64.strict_encode64(bytes),
+        status: "included",
+        error: nil
+      }
+    rescue StandardError => e
+      content_error_payload("read_failed: #{e.class}")
+    end
+
+    def resolve_attachment_file_path(storage_key)
+      return nil if storage_key.blank?
+      return storage_key if storage_key.start_with?("/")
+
+      Rails.root.join(storage_key).to_s
+    end
+
+    def max_attachment_base64_bytes
+      configured = ENV["N8N_ATTACHMENT_BASE64_MAX_BYTES"].to_i
+      configured.positive? ? configured : ATTACHMENT_BASE64_MAX_BYTES
+    end
+
+    def content_error_payload(error)
+      {
+        encoding: nil,
+        content_base64: nil,
+        status: "omitted",
+        error: error
       }
     end
   end

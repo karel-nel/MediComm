@@ -11,7 +11,8 @@ module Fields
     end
 
     def call
-      flow_fields = @intake_session.intake_flow.intake_fields.active.includes(:intake_field_group).order(:ask_priority)
+      branch_state = Fields::ResolveBranches.call(intake_session: @intake_session)
+      flow_fields = Array(branch_state[:active_fields])
       latest_values = latest_unsuperseded_values(flow_fields)
 
       completed_fields = []
@@ -54,6 +55,7 @@ module Fields
         completed_fields: completed_fields,
         missing_fields: missing_fields.uniq,
         clarification_fields: clarification_fields.uniq,
+        skipped_fields: Array(branch_state[:skipped_field_keys]),
         allowed_next_asks: allowed_next_asks,
         next_ask_batches: build_next_ask_batches(flow_fields: flow_fields, allowed_next_asks: allowed_next_asks)
       }
@@ -109,8 +111,11 @@ module Fields
     end
 
     def latest_unsuperseded_values(flow_fields)
+      field_ids = flow_fields.map(&:id)
+      return {} if field_ids.empty?
+
       scope = @intake_session.intake_field_values
-        .where(intake_field_id: flow_fields.select(:id), superseded_by_id: nil)
+        .where(intake_field_id: field_ids, superseded_by_id: nil)
         .order(:created_at)
 
       scope.each_with_object({}) do |value, acc|

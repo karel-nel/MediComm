@@ -24,10 +24,12 @@ module Sessions
         relevant_messages.each do |message_data|
           persistence_result = Whatsapp::PersistInboundMessage.call(
             intake_session: @session,
-            message_data: message_data
+            message_data: message_data,
+            enqueue_attachment_jobs: false
           )
 
           next if persistence_result[:duplicate]
+          ingest_attachments_inline(persistence_result[:attachments])
 
           trigger_payload = Conversation::BuildN8nRequest.call(
             intake_session: @session,
@@ -57,6 +59,23 @@ module Sessions
 
     def inbound_messages
       @inbound_messages ||= Whatsapp::InboundEventExtractor.call(parsed_event: @parsed_event)
+    end
+
+    def ingest_attachments_inline(created_attachments)
+      Array(created_attachments).each do |record|
+        attachment = record[:attachment]
+        media_id = record[:media_id]
+        next if attachment.blank? || media_id.blank?
+
+        DownloadWhatsappMediaJob.new.perform(
+          {
+            attachment_id: attachment.id,
+            media_id: media_id,
+            whatsapp_account_id: @session.whatsapp_account_id,
+            inline: true
+          }
+        )
+      end
     end
   end
 end

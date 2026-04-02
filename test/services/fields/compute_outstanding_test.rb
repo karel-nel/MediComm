@@ -121,4 +121,102 @@ class Fields::ComputeOutstandingTest < ActiveSupport::TestCase
     assert_equal "responsible_person", first_batch[:group_key]
     assert_equal [ "responsible_surname", "responsible_id_number", "responsible_cell_phone" ], first_batch[:field_keys]
   end
+
+  test "excludes required fields that are currently skipped and reintroduces when skip condition clears" do
+    practice = practices(:one)
+    user = users(:one)
+    account = WhatsappAccount.create!(
+      practice: practice,
+      phone_number_id: "948579418347998",
+      waba_id: "waba-test-skipped-001",
+      display_phone_number: "+27 69 000 8888",
+      webhook_verify_token: "verify-token-skipped",
+      app_secret_ciphertext: "app-secret-skipped",
+      access_token_ciphertext: "access-token-skipped",
+      active: true
+    )
+    flow = IntakeFlow.create!(
+      practice: practice,
+      created_by: user,
+      name: "Skipped Required Intake",
+      flow_type: "new_patient",
+      status: :published,
+      default_language: "en-ZA",
+      tone_preset: "professional",
+      completion_email_enabled: false,
+      completion_email_recipients_json: []
+    )
+    group = IntakeFieldGroup.create!(
+      intake_flow: flow,
+      key: "occupation",
+      label: "Occupation",
+      position: 1,
+      repeatable: false,
+      visibility_rules_json: {}
+    )
+    occupation_field = IntakeField.create!(
+      intake_flow: flow,
+      intake_field_group: group,
+      key: "patient_occupation",
+      label: "Occupation",
+      field_type: "text",
+      required: false,
+      ask_priority: 1,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+    business_field = IntakeField.create!(
+      intake_flow: flow,
+      intake_field_group: group,
+      key: "patient_self_employed_business_name",
+      label: "Business Name",
+      field_type: "text",
+      required: true,
+      ask_priority: 2,
+      extraction_enabled: true,
+      source_preference: "any",
+      skip_rules_json: {
+        operator: "all",
+        skip_if: [
+          {
+            field_key: "patient_occupation",
+            op: "not_contains_any",
+            value: [ "self", "self-employed" ]
+          }
+        ]
+      },
+      active: true
+    )
+
+    session = IntakeSession.create!(
+      practice: practice,
+      intake_flow: flow,
+      whatsapp_account: account,
+      initiated_by_user: user,
+      patient_phone_e164: "+27820002222",
+      patient_display_name: "Skip Test",
+      status: :active,
+      language: "en-ZA",
+      started_at: Time.current
+    )
+
+    initial_result = Fields::ComputeOutstanding.call(intake_session: session)
+    assert_not_includes initial_result[:missing_fields], business_field.key
+    assert_not_includes initial_result[:allowed_next_asks], business_field.key
+    assert_includes initial_result[:skipped_fields], business_field.key
+
+    IntakeFieldValue.create!(
+      intake_session: session,
+      intake_field: occupation_field,
+      canonical_value_text: "Self-employed consultant",
+      status: :complete,
+      confidence: 0.99
+    )
+
+    resolved_result = Fields::ComputeOutstanding.call(intake_session: session)
+    assert_includes resolved_result[:missing_fields], business_field.key
+    assert_includes resolved_result[:allowed_next_asks], business_field.key
+    assert_not_includes resolved_result[:skipped_fields], business_field.key
+  end
 end

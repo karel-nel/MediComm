@@ -1,6 +1,17 @@
 require "test_helper"
+require "sidekiq/testing"
+require "base64"
 
 class ProcessIncomingWhatsappWebhookJobTest < ActiveSupport::TestCase
+  setup do
+    Sidekiq::Testing.fake!
+    DownloadWhatsappMediaJob.clear
+  end
+
+  teardown do
+    DownloadWhatsappMediaJob.clear
+  end
+
   test "persists inbound message once and skips duplicate provider message ids" do
     practice = practices(:one)
     user = users(:one)
@@ -59,6 +70,17 @@ class ProcessIncomingWhatsappWebhookJobTest < ActiveSupport::TestCase
                     "timestamp" => "1773753464",
                     "text" => { "body" => "hello" },
                     "type" => "text"
+                  },
+                  {
+                    "from" => "27825608530",
+                    "id" => "wamid.HBgLMjc4MjU2MDg1MzAVAgASGBYzRUIwRThGQjk1RDNCRTY1NEU1NzNBBQ==",
+                    "timestamp" => "1773753465",
+                    "type" => "document",
+                    "document" => {
+                      "id" => "meta-media-id-001",
+                      "mime_type" => "application/pdf",
+                      "filename" => "patient-id.pdf"
+                    }
                   }
                 ]
               }
@@ -69,8 +91,10 @@ class ProcessIncomingWhatsappWebhookJobTest < ActiveSupport::TestCase
     }
 
     trigger_calls = 0
+    trigger_payloads = []
     stubbed_trigger = lambda do |payload:, intake_session:|
       trigger_calls += 1
+      trigger_payloads << payload
       { status: :ok, payload: payload, session_id: intake_session.id }
     end
 
@@ -80,7 +104,27 @@ class ProcessIncomingWhatsappWebhookJobTest < ActiveSupport::TestCase
     end
 
     assert_equal 1, IntakeMessage.where(provider_message_id: "wamid.HBgLMjc4MjU2MDg1MzAVAgASGBYzRUIwRThGQjk1RDNCRTY1NEU1NzNBAA==").count
-    assert_equal 1, trigger_calls
+    assert_equal 1, IntakeMessage.where(provider_message_id: "wamid.HBgLMjc4MjU2MDg1MzAVAgASGBYzRUIwRThGQjk1RDNCRTY1NEU1NzNBBQ==").count
+    attachment = IntakeAttachment.find_by(file_name: "patient-id.pdf")
+    assert_not_nil attachment
+    assert_equal "processed", attachment.processing_status
+    assert attachment.s3_key.present?
+    assert_equal 0, DownloadWhatsappMediaJob.jobs.size
+
+    source_doc_payload = trigger_payloads.find do |payload|
+      payload[:source_message_id] == "wamid.HBgLMjc4MjU2MDg1MzAVAgASGBYzRUIwRThGQjk1RDNCRTY1NEU1NzNBBQ=="
+    end
+    assert_not_nil source_doc_payload
+
+    encoded_attachment = source_doc_payload[:recent_attachments].find { |entry| entry[:id] == attachment.id }
+    assert_not_nil encoded_attachment
+    assert_equal "base64", encoded_attachment[:content_encoding]
+    assert_equal "included", encoded_attachment[:content_status]
+
+    expected_base64 = Base64.strict_encode64(File.binread(Rails.root.join(attachment.s3_key)))
+    assert_equal expected_base64, encoded_attachment[:content_base64]
+
+    assert_equal 2, trigger_calls
   end
 
   private

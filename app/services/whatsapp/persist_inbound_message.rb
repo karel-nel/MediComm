@@ -1,12 +1,17 @@
 module Whatsapp
   class PersistInboundMessage
-    def self.call(intake_session:, message_data:)
-      new(intake_session: intake_session, message_data: message_data).call
+    def self.call(intake_session:, message_data:, enqueue_attachment_jobs: true)
+      new(
+        intake_session: intake_session,
+        message_data: message_data,
+        enqueue_attachment_jobs: enqueue_attachment_jobs
+      ).call
     end
 
-    def initialize(intake_session:, message_data:)
+    def initialize(intake_session:, message_data:, enqueue_attachment_jobs: true)
       @intake_session = intake_session
       @message_data = message_data
+      @enqueue_attachment_jobs = enqueue_attachment_jobs
     end
 
     def call
@@ -14,6 +19,7 @@ module Whatsapp
       return duplicate_result(existing_message) if existing_message
 
       message = nil
+      created_attachments = []
       IntakeMessage.transaction do
         message = intake_session.intake_messages.create!(
           direction: :inbound,
@@ -35,9 +41,13 @@ module Whatsapp
             raw_message: message_data[:raw_message]
           }
         )
+
+        created_attachments = persist_attachments_for(message)
       end
 
-      { created: true, duplicate: false, message: message }
+      enqueue_attachment_downloads(created_attachments) if @enqueue_attachment_jobs
+
+      { created: true, duplicate: false, message: message, attachments: created_attachments }
     end
 
     private
@@ -57,6 +67,52 @@ module Whatsapp
 
     def provider_message_id
       message_data[:provider_message_id].to_s
+    end
+
+    def persist_attachments_for(message)
+      Array(message_data[:attachments]).each_with_object([]) do |attachment_data, attachments|
+        media_id = attachment_data[:media_id].to_s.strip
+        next if media_id.blank?
+
+        attachment = intake_session.intake_attachments.create!(
+          intake_message: message,
+          file_name: attachment_data[:file_name].to_s.presence || fallback_file_name(media_id: media_id),
+          mime_type: attachment_data[:mime_type].to_s.presence || "application/octet-stream",
+          byte_size: attachment_data[:byte_size],
+          processing_status: "pending_download",
+          s3_key: nil
+        )
+
+        intake_session.intake_events.create!(
+          event_type: "inbound_attachment_persisted",
+          payload_json: {
+            intake_attachment_id: attachment.id,
+            intake_message_id: message.id,
+            provider_message_id: provider_message_id,
+            media_id: media_id,
+            media_type: attachment_data[:media_type].to_s,
+            mime_type: attachment.mime_type
+          }
+        )
+
+        attachments << { attachment: attachment, media_id: media_id }
+      end
+    end
+
+    def enqueue_attachment_downloads(created_attachments)
+      created_attachments.each do |record|
+        DownloadWhatsappMediaJob.perform_async(
+          {
+            attachment_id: record.fetch(:attachment).id,
+            media_id: record.fetch(:media_id),
+            whatsapp_account_id: intake_session.whatsapp_account_id
+          }
+        )
+      end
+    end
+
+    def fallback_file_name(media_id:)
+      "media-#{media_id}.bin"
     end
   end
 end
