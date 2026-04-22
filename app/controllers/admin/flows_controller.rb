@@ -100,7 +100,7 @@ class Admin::FlowsController < Admin::BaseController
       :tone_preset,
       :allow_skip_by_default,
       :completion_email_enabled,
-      intake_fields_attributes: [ :id, :required, :ask_priority, :source_preference, :extraction_enabled, :active ]
+      intake_fields_attributes: [ :id, :required, :ask_priority, :source_preference, :extraction_enabled, :active, { linked_field_keys: [] } ]
     )
   end
 

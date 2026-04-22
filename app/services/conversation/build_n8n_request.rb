@@ -42,6 +42,8 @@ module Conversation
           deterministic_rules_owned_by_rails: true,
           do_not_ask_completed_fields: true,
           ask_linked_fields_as_batch_when_available: true,
+          prefer_clustered_questions: true,
+          use_next_question_batch_as_source_of_truth: true,
           do_not_change_business_rules: true,
           reply_naturally: true
         }
@@ -155,8 +157,31 @@ module Conversation
         completed_fields: outstanding_state[:completed_fields],
         missing_fields: outstanding_state[:missing_fields],
         needs_clarification: outstanding_state[:clarification_fields],
+        cluster_warnings: outstanding_state[:cluster_warnings],
         allowed_next_asks: outstanding_state[:allowed_next_asks],
-        next_ask_batches: outstanding_state[:next_ask_batches]
+        next_ask_batches: outstanding_state[:next_ask_batches],
+        question_clusters: outstanding_state[:question_clusters],
+        recommended_next_ask: next_ask_recommendation,
+        next_question_batch: next_question_batch_payload
+      }
+    end
+
+    def next_ask_recommendation
+      @next_ask_recommendation ||= Conversation::SelectNextAsk.call(intake_session: intake_session)
+    end
+
+    def next_question_batch_payload
+      recommendation = next_ask_recommendation
+      return nil if recommendation.blank?
+
+      generated_reply = Conversation::GenerateReply.call(intake_session_id: intake_session.id)
+
+      {
+        mode: recommendation[:mode],
+        cluster_key: recommendation[:cluster_key],
+        field_keys: Array(recommendation[:field_keys]),
+        fields: Array(recommendation[:fields]),
+        suggested_reply_text: generated_reply[:reply_text]
       }
     end
 

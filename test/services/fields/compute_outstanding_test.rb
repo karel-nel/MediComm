@@ -219,4 +219,262 @@ class Fields::ComputeOutstandingTest < ActiveSupport::TestCase
     assert_includes resolved_result[:allowed_next_asks], business_field.key
     assert_not_includes resolved_result[:skipped_fields], business_field.key
   end
+
+  test "keeps unanswered linked fields together even when cluster anchor is already complete" do
+    practice = practices(:one)
+    user = users(:one)
+    account = WhatsappAccount.create!(
+      practice: practice,
+      phone_number_id: "948579418347997",
+      waba_id: "waba-test-address-001",
+      display_phone_number: "+27 69 000 7777",
+      webhook_verify_token: "verify-token-address",
+      app_secret_ciphertext: "app-secret-address",
+      access_token_ciphertext: "access-token-address",
+      active: true
+    )
+    flow = IntakeFlow.create!(
+      practice: practice,
+      created_by: user,
+      name: "Address Cluster Intake",
+      flow_type: "new_patient",
+      status: :published,
+      default_language: "en-ZA",
+      tone_preset: "professional",
+      completion_email_enabled: false,
+      completion_email_recipients_json: []
+    )
+    group = IntakeFieldGroup.create!(
+      intake_flow: flow,
+      key: "address_details",
+      label: "Address Details",
+      position: 1,
+      repeatable: false,
+      visibility_rules_json: {}
+    )
+    street_number_field = IntakeField.create!(
+      intake_flow: flow,
+      intake_field_group: group,
+      key: "address_street_number",
+      label: "Street Number",
+      field_type: "text",
+      required: true,
+      ask_priority: 1,
+      extraction_enabled: true,
+      source_preference: "any",
+      branching_rules_json: {
+        linked_field_keys: [
+          "address_street_name",
+          "address_area",
+          "address_province"
+        ]
+      },
+      active: true
+    )
+    street_name_field = IntakeField.create!(
+      intake_flow: flow,
+      intake_field_group: group,
+      key: "address_street_name",
+      label: "Street Name",
+      field_type: "text",
+      required: true,
+      ask_priority: 2,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+    area_field = IntakeField.create!(
+      intake_flow: flow,
+      intake_field_group: group,
+      key: "address_area",
+      label: "Area",
+      field_type: "text",
+      required: true,
+      ask_priority: 3,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+    province_field = IntakeField.create!(
+      intake_flow: flow,
+      intake_field_group: group,
+      key: "address_province",
+      label: "Province",
+      field_type: "text",
+      required: true,
+      ask_priority: 4,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+
+    session = IntakeSession.create!(
+      practice: practice,
+      intake_flow: flow,
+      whatsapp_account: account,
+      initiated_by_user: user,
+      patient_phone_e164: "+27820003333",
+      patient_display_name: "Address Test",
+      status: :active,
+      language: "en-ZA",
+      started_at: Time.current
+    )
+
+    IntakeFieldValue.create!(
+      intake_session: session,
+      intake_field: street_number_field,
+      canonical_value_text: "24",
+      status: :complete,
+      confidence: 0.98
+    )
+
+    result = Fields::ComputeOutstanding.call(intake_session: session)
+    first_batch = result[:next_ask_batches].first
+
+    assert_equal [ street_name_field.key, area_field.key, province_field.key ], first_batch[:field_keys]
+    assert_equal first_batch[:field_keys], result[:question_clusters].first[:field_keys]
+    assert_not_includes first_batch[:field_keys], street_number_field.key
+  end
+
+  test "reports cluster warnings for orphan and one-way links" do
+    practice = practices(:one)
+    user = users(:one)
+    account = WhatsappAccount.create!(
+      practice: practice,
+      phone_number_id: "948579418347996",
+      waba_id: "waba-test-warnings-001",
+      display_phone_number: "+27 69 000 6666",
+      webhook_verify_token: "verify-token-warnings",
+      app_secret_ciphertext: "app-secret-warnings",
+      access_token_ciphertext: "access-token-warnings",
+      active: true
+    )
+    flow = IntakeFlow.create!(
+      practice: practice,
+      created_by: user,
+      name: "Cluster Warning Intake",
+      flow_type: "new_patient",
+      status: :published,
+      default_language: "en-ZA",
+      tone_preset: "professional",
+      completion_email_enabled: false,
+      completion_email_recipients_json: []
+    )
+
+    IntakeField.create!(
+      intake_flow: flow,
+      key: "address_street_number",
+      label: "Street Number",
+      field_type: "text",
+      required: true,
+      ask_priority: 1,
+      extraction_enabled: true,
+      source_preference: "any",
+      branching_rules_json: {
+        linked_field_keys: [
+          "address_street_name",
+          "address_missing_from_flow"
+        ]
+      },
+      active: true
+    )
+    IntakeField.create!(
+      intake_flow: flow,
+      key: "address_street_name",
+      label: "Street Name",
+      field_type: "text",
+      required: true,
+      ask_priority: 2,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+
+    session = IntakeSession.create!(
+      practice: practice,
+      intake_flow: flow,
+      whatsapp_account: account,
+      initiated_by_user: user,
+      patient_phone_e164: "+27820004444",
+      patient_display_name: "Warning Test",
+      status: :active,
+      language: "en-ZA",
+      started_at: Time.current
+    )
+
+    result = Fields::ComputeOutstanding.call(intake_session: session)
+
+    assert_equal 2, result[:cluster_warnings].size
+    assert_equal "one_way_link", result[:cluster_warnings].first[:type]
+    assert_equal "orphan_link", result[:cluster_warnings].second[:type]
+  end
+
+  test "includes unresolved optional linked fields when asking a required cluster" do
+    practice = practices(:one)
+    user = users(:one)
+    account = WhatsappAccount.create!(
+      practice: practice,
+      phone_number_id: "948579418347995",
+      waba_id: "waba-test-optional-cluster-001",
+      display_phone_number: "+27 69 000 5555",
+      webhook_verify_token: "verify-token-optional-cluster",
+      app_secret_ciphertext: "app-secret-optional-cluster",
+      access_token_ciphertext: "access-token-optional-cluster",
+      active: true
+    )
+    flow = IntakeFlow.create!(
+      practice: practice,
+      created_by: user,
+      name: "Optional Cluster Intake",
+      flow_type: "new_patient",
+      status: :published,
+      default_language: "en-ZA",
+      tone_preset: "professional",
+      completion_email_enabled: false,
+      completion_email_recipients_json: []
+    )
+
+    IntakeField.create!(
+      intake_flow: flow,
+      key: "patient_id_number",
+      label: "ID Number",
+      field_type: "text",
+      required: true,
+      ask_priority: 1,
+      extraction_enabled: true,
+      source_preference: "any",
+      branching_rules_json: { linked_field_keys: [ "patient_email" ] },
+      active: true
+    )
+    IntakeField.create!(
+      intake_flow: flow,
+      key: "patient_email",
+      label: "Email",
+      field_type: "email",
+      required: false,
+      ask_priority: 2,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+
+    session = IntakeSession.create!(
+      practice: practice,
+      intake_flow: flow,
+      whatsapp_account: account,
+      initiated_by_user: user,
+      patient_phone_e164: "+27820005555",
+      patient_display_name: "Optional Cluster Test",
+      status: :active,
+      language: "en-ZA",
+      started_at: Time.current
+    )
+
+    result = Fields::ComputeOutstanding.call(intake_session: session)
+    first_batch = result[:next_ask_batches].first
+
+    assert_equal [ "patient_id_number", "patient_email" ], first_batch[:field_keys]
+    assert_includes result[:missing_fields], "patient_id_number"
+    assert_not_includes result[:missing_fields], "patient_email"
+  end
 end

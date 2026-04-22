@@ -77,13 +77,32 @@ class Api::V1::ConversationResponsesController < Api::V1::BaseController
 
   def state_payload
     state = Fields::ComputeOutstanding.call(intake_session: @intake_session)
+    recommendation = Conversation::SelectNextAsk.call(intake_session: @intake_session)
 
     {
       completed_fields: state[:completed_fields],
       missing_fields: state[:missing_fields],
       needs_clarification: state[:clarification_fields],
+      cluster_warnings: state[:cluster_warnings],
       allowed_next_asks: state[:allowed_next_asks],
-      next_ask_batches: state[:next_ask_batches]
+      next_ask_batches: state[:next_ask_batches],
+      question_clusters: state[:question_clusters],
+      recommended_next_ask: recommendation,
+      next_question_batch: next_question_batch_payload(recommendation)
+    }
+  end
+
+  def next_question_batch_payload(recommendation)
+    return nil if recommendation.blank?
+
+    generated_reply = Conversation::GenerateReply.call(intake_session_id: @intake_session.id)
+
+    {
+      mode: recommendation[:mode],
+      cluster_key: recommendation[:cluster_key],
+      field_keys: Array(recommendation[:field_keys]),
+      fields: Array(recommendation[:fields]),
+      suggested_reply_text: generated_reply[:reply_text]
     }
   end
 end

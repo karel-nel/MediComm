@@ -25,7 +25,10 @@ module Conversation
         applied_by: "n8n"
       )
 
-      reply_text = validate_reply_text(@payload.dig("reply", "text") || @payload.dig(:reply, :text))
+      reply_text, reply_source = validate_reply_text(
+        raw_reply_text: @payload.dig("reply", "text") || @payload.dig(:reply, :text),
+        apply_result: apply_result
+      )
       send_result = Whatsapp::SendMessage.call(intake_session_id: @intake_session.id, message_body: reply_text)
 
       outbound_message = Whatsapp::PersistOutboundMessage.call(
@@ -44,7 +47,8 @@ module Conversation
           applied_count: apply_result[:applied_count],
           rejected_keys: apply_result[:rejected_keys],
           outbound_message_id: outbound_message.id,
-          send_status: send_result[:status]
+          send_status: send_result[:status],
+          reply_source: reply_source
         }
       )
 
@@ -75,11 +79,26 @@ module Conversation
       { status: :duplicate, intake_session_id: @intake_session.id }
     end
 
-    def validate_reply_text(raw_reply_text)
-      text = raw_reply_text.to_s.strip
+    def validate_reply_text(raw_reply_text:, apply_result:)
+      provided_text = raw_reply_text.to_s.strip
+      generated_text = Conversation::GenerateReply.call(intake_session_id: @intake_session.id)[:reply_text].to_s.strip
+
+      if should_prefer_generated_reply?(provided_text: provided_text, apply_result: apply_result, generated_text: generated_text)
+        return [ generated_text, "generated" ]
+      end
+
+      text = provided_text
       text = FALLBACK_REPLY if text.blank?
       text = text.truncate(MAX_REPLY_LENGTH)
-      text
+      [ text, "n8n" ]
+    end
+
+    def should_prefer_generated_reply?(provided_text:, apply_result:, generated_text:)
+      return true if provided_text.blank? && generated_text.present?
+      return false if generated_text.blank?
+
+      # Prevent stale/sticky asks from n8n after new candidates were accepted.
+      apply_result[:applied_count].to_i.positive?
     end
   end
 end

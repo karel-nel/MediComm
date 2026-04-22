@@ -17,6 +17,7 @@ class Admin::FieldsController < Admin::BaseController
     @field = @flow.intake_fields.new(field_params)
     return render_invalid_field!("Could not create field.") unless normalize_group_scope!(@field)
     return render_invalid_field!("Could not create field.") unless apply_json_attributes(@field)
+    apply_linked_field_keys(@field)
 
     if @field.save
       redirect_to admin_flow_path(@flow), notice: "Field created."
@@ -32,6 +33,7 @@ class Admin::FieldsController < Admin::BaseController
     @field.assign_attributes(field_params)
     return render_invalid_field!("Could not update field.") unless normalize_group_scope!(@field)
     return render_invalid_field!("Could not update field.") unless apply_json_attributes(@field)
+    apply_linked_field_keys(@field)
 
     if @field.save
       redirect_to admin_flow_path(@flow), notice: "Field updated."
@@ -106,6 +108,13 @@ class Admin::FieldsController < Admin::BaseController
     field.skip_rules_json = skip_rules
     field.example_values_json = example_values
     true
+  end
+
+  def apply_linked_field_keys(field)
+    linked_keys = params.dig(:intake_field, :linked_field_keys)
+    return if linked_keys.nil?
+
+    field.linked_field_keys = linked_keys
   end
 
   def parse_json_object(param_key, fallback)

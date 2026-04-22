@@ -5,6 +5,8 @@ class Api::V1::IntakeSessionsController < Api::V1::BaseController
     state = Fields::ComputeOutstanding.call(intake_session: @intake_session)
     latest_message = @intake_session.intake_messages.reorder(created_at: :desc).first
 
+    recommendation = Conversation::SelectNextAsk.call(intake_session: @intake_session)
+
     render json: {
       practice: {
         id: @intake_session.practice.id,
@@ -39,8 +41,12 @@ class Api::V1::IntakeSessionsController < Api::V1::BaseController
         completed_fields: state[:completed_fields],
         missing_fields: state[:missing_fields],
         needs_clarification: state[:clarification_fields],
+        cluster_warnings: state[:cluster_warnings],
         allowed_next_asks: state[:allowed_next_asks],
-        next_ask_batches: state[:next_ask_batches]
+        next_ask_batches: state[:next_ask_batches],
+        question_clusters: state[:question_clusters],
+        recommended_next_ask: recommendation,
+        next_question_batch: next_question_batch_payload(recommendation)
       },
       latest_message: latest_message_payload(latest_message),
       recent_transcript: transcript_payload,
@@ -52,6 +58,8 @@ class Api::V1::IntakeSessionsController < Api::V1::BaseController
         deterministic_rules_owned_by_rails: true,
         do_not_ask_completed_fields: true,
         ask_linked_fields_as_batch_when_available: true,
+        prefer_clustered_questions: true,
+        use_next_question_batch_as_source_of_truth: true,
         do_not_change_business_rules: true,
         reply_naturally: true
       }
@@ -92,5 +100,19 @@ class Api::V1::IntakeSessionsController < Api::V1::BaseController
           created_at: message.created_at&.iso8601
         }
       end
+  end
+
+  def next_question_batch_payload(recommendation)
+    return nil if recommendation.blank?
+
+    generated_reply = Conversation::GenerateReply.call(intake_session_id: @intake_session.id)
+
+    {
+      mode: recommendation[:mode],
+      cluster_key: recommendation[:cluster_key],
+      field_keys: Array(recommendation[:field_keys]),
+      fields: Array(recommendation[:fields]),
+      suggested_reply_text: generated_reply[:reply_text]
+    }
   end
 end

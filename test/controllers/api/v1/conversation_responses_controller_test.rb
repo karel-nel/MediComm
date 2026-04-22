@@ -31,6 +31,29 @@ class Api::V1::ConversationResponsesControllerTest < ActionDispatch::Integration
       completion_email_enabled: false,
       completion_email_recipients_json: []
     )
+    IntakeField.create!(
+      intake_flow: flow,
+      key: "address_street_number",
+      label: "Street Number",
+      field_type: "text",
+      required: true,
+      ask_priority: 1,
+      extraction_enabled: true,
+      source_preference: "any",
+      branching_rules_json: { linked_field_keys: [ "address_street_name" ] },
+      active: true
+    )
+    IntakeField.create!(
+      intake_flow: flow,
+      key: "address_street_name",
+      label: "Street Name",
+      field_type: "text",
+      required: true,
+      ask_priority: 2,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
     @session = IntakeSession.create!(
       practice: practice,
       intake_flow: flow,
@@ -74,6 +97,11 @@ class Api::V1::ConversationResponsesControllerTest < ActionDispatch::Integration
     end
 
     assert_response :accepted
+    json = JSON.parse(response.body)
+    assert_equal "cluster", json.dig("state", "next_question_batch", "mode")
+    assert_equal [ "address_street_number", "address_street_name" ], json.dig("state", "next_question_batch", "field_keys")
+    assert_includes json.dig("state", "next_question_batch", "suggested_reply_text"), "Please share the following details"
+    assert_equal "one_way_link", json.dig("state", "cluster_warnings", 0, "type")
   end
 
   private

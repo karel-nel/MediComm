@@ -42,6 +42,11 @@ class Conversation::BuildN8nRequestTest < ActiveSupport::TestCase
     assert_equal Base64.strict_encode64(file_bytes), encoded_attachment[:content_base64]
     assert_equal "included", encoded_attachment[:content_status]
     assert_nil encoded_attachment[:content_error]
+    assert_equal payload.dig(:state, :next_ask_batches), payload.dig(:state, :question_clusters)
+    assert_includes payload.dig(:state).keys, :cluster_warnings
+    assert_includes payload[:state].keys, :recommended_next_ask
+    assert_includes payload[:state].keys, :next_question_batch
+    assert_equal true, payload.dig(:instructions, :use_next_question_batch_as_source_of_truth)
   ensure
     FileUtils.rm_rf(Rails.root.join("tmp", "storage", "intake_attachments", "test"))
   end

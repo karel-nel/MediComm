@@ -4,9 +4,15 @@
   <ul class="mt-4 space-y-3">
     <% if @events.any? %>
       <% @events.each do |event| %>
-        <li class="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+        <% missing_source_id = missing_source_message_id?(event) %>
+        <li class="rounded-xl border p-3 <%= missing_source_id ? 'border-rose-200 bg-rose-50/70' : 'border-slate-100 bg-slate-50/70' %>">
           <p class="text-sm font-medium text-slate-900"><%= event.event_type.humanize %></p>
           <p class="mt-1 text-xs text-slate-500"><%= l(event.created_at, format: :short) %></p>
+          <% if missing_source_id %>
+            <p class="mt-2 inline-flex rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+              Missing source_message_id
+            </p>
+          <% end %>
           <% if event.payload_json.present? %>
             <p class="mt-2 text-xs text-slate-600"><%= event.payload_json.to_json %></p>
           <% end %>

@@ -28,7 +28,16 @@ class Admin::SessionsController < Admin::BaseController
       notes: params[:notes].presence || "Follow-up requested by reviewer.",
       event_type: "session_follow_up_requested"
     )
-    redirect_to admin_session_path(@intake_session), alert: "Follow-up requested."
+
+    send_result = send_follow_up_template!
+    flash_key = send_result[:status] == :sent ? :notice : :alert
+    flash_message = if send_result[:status] == :sent
+      "Follow-up requested and WhatsApp template sent."
+    else
+      "Follow-up requested, but WhatsApp template did not send (#{send_result[:reason] || send_result[:error] || 'unknown_error'})."
+    end
+
+    redirect_to admin_session_path(@intake_session), flash_key => flash_message
   end
 
   def reopen
@@ -139,5 +148,35 @@ class Admin::SessionsController < Admin::BaseController
         intake_field_values: [ :intake_field, :source_message, :source_attachment ]
       )
       .find(params[:id])
+  end
+
+  def send_follow_up_template!
+    template_result = Whatsapp::SendTemplateMessage.call(
+      intake_session_id: @intake_session.id,
+      body_parameters: [
+        @intake_session.patient_display_name.to_s.presence || "there"
+      ]
+    )
+
+    preview_text = "Follow-up requested by reviewer."
+    outbound_message = Whatsapp::PersistOutboundMessage.call(
+      intake_session: @intake_session,
+      reply_text: preview_text,
+      provider_response: template_result,
+      message_type: "template"
+    )
+
+    @intake_session.intake_events.create!(
+      event_type: template_result[:status] == :sent ? "follow_up_template_sent" : "follow_up_template_failed",
+      payload_json: {
+        intake_message_id: outbound_message.id,
+        send_result: template_result
+      }
+    )
+
+    template_result
+  rescue StandardError => e
+    Rails.logger.error("[Admin::SessionsController] follow-up template send failed for session=#{@intake_session.id}: #{e.class}: #{e.message}")
+    { status: :failed, error: e.message }
   end
 end

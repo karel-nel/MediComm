@@ -48,8 +48,33 @@ class Api::V1::IntakeSessionsControllerTest < ActionDispatch::IntegrationTest
       ask_priority: 2,
       extraction_enabled: true,
       source_preference: "any",
+      branching_rules_json: { linked_field_keys: [ "patient_cell_phone" ] },
       active: true
     )
+    @cluster_missing_field = IntakeField.create!(
+      intake_flow: @flow,
+      key: "patient_cell_phone",
+      label: "Patient Cell Phone",
+      field_type: "phone",
+      required: true,
+      ask_priority: 3,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+    @cluster_optional_field = IntakeField.create!(
+      intake_flow: @flow,
+      key: "patient_email",
+      label: "Patient Email",
+      field_type: "email",
+      required: false,
+      ask_priority: 4,
+      extraction_enabled: true,
+      source_preference: "any",
+      active: true
+    )
+    @missing_field.linked_field_keys = [ "patient_cell_phone", "patient_email" ]
+    @missing_field.save!
     @session = IntakeSession.create!(
       practice: @practice,
       intake_flow: @flow,
@@ -93,6 +118,16 @@ class Api::V1::IntakeSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal @session.id, json.dig("session", "id")
     assert_equal @flow.name, json.dig("flow", "name")
     assert_includes json.dig("state", "missing_fields"), "patient_id_number"
+    assert_includes json.dig("state", "missing_fields"), "patient_cell_phone"
+    assert_not_includes json.dig("state", "missing_fields"), "patient_email"
+    assert_includes json.dig("state").keys, "cluster_warnings"
+    assert_equal json.dig("state", "next_ask_batches"), json.dig("state", "question_clusters")
+    assert_equal "patient_id_number", json.dig("state", "recommended_next_ask", "cluster_key")
+    assert_equal "cluster", json.dig("state", "recommended_next_ask", "mode")
+    assert_equal [ "patient_id_number", "patient_cell_phone", "patient_email" ], json.dig("state", "next_question_batch", "field_keys")
+    assert_equal "cluster", json.dig("state", "next_question_batch", "mode")
+    assert_includes json.dig("state", "next_question_batch", "suggested_reply_text"), "Please share the following details"
+    assert_equal true, json.dig("instructions", "use_next_question_batch_as_source_of_truth")
     assert_equal "hello", json.dig("latest_message", "text")
   end
 

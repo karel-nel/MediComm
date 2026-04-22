@@ -26,7 +26,7 @@
       </div>
       <div>
         <%= f.label :status, class: "mb-1 block text-sm font-medium text-slate-700" %>
-        <%= f.select :status, options_for_select(IntakeFieldValue.statuses.keys.map { |status| [status.humanize, status] }, @field_value.status), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+        <%= f.select :status, options_for_select(IntakeFieldValue.statuses.keys.map { |status| [status == "candidate" ? "Needs confirmation" : status.humanize, status] }, @field_value.status), {}, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
       </div>
       <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
         <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-700">

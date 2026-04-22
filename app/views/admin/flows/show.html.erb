@@ -68,6 +68,7 @@
                   <th class="px-3 py-2 text-left font-semibold text-slate-700">Required</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-700">Extraction</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-700">Priority</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Linked Questions</th>
                   <th class="px-3 py-2 text-right font-semibold text-slate-700">Actions</th>
                 </tr>
               </thead>
@@ -86,6 +87,7 @@
                     </td>
                     <td class="px-3 py-2"><%= render Admin::StatusBadgeComponent.new(value: field.extraction_enabled? ? "active" : "disabled") %></td>
                     <td class="px-3 py-2 text-slate-700"><%= field.ask_priority %></td>
+                    <td class="px-3 py-2 text-xs text-slate-600"><%= field.linked_field_keys.join(", ").presence || "-" %></td>
                     <td class="px-3 py-2">
                       <div class="flex justify-end gap-1">
                         <%= button_to "Up", move_admin_flow_field_path(@flow, field, direction: "up"), method: :patch, class: "rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100" %>

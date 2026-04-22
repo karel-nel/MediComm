@@ -94,6 +94,7 @@
                   <th class="px-3 py-2 text-left font-semibold text-slate-700">Extraction</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-700">Source Preference</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-700">Ask Priority</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-700">Linked Questions</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-700">Active</th>
                 </tr>
               </thead>
@@ -114,6 +115,15 @@
                       </td>
                       <td class="px-3 py-2">
                         <%= ff.number_field :ask_priority, min: 0, class: "w-20 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-100" %>
+                      </td>
+                      <td class="px-3 py-2">
+                        <% cluster_link_options = @presenter.cluster_link_options_for(field) %>
+                        <% selector_size = [ [ cluster_link_options.size, 2 ].max, 5 ].min %>
+                        <%= ff.select :linked_field_keys, options_for_select(cluster_link_options, field.linked_field_keys), {}, multiple: true, size: selector_size, class: "w-56 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-100" %>
+                        <% linked_labels = @presenter.linked_field_labels_for(field) %>
+                        <% if linked_labels.any? %>
+                          <p class="mt-1 max-w-xs text-[11px] leading-4 text-slate-500"><%= linked_labels.join(", ") %></p>
+                        <% end %>
                       </td>
                       <td class="px-3 py-2"><%= ff.check_box :active, class: "rounded border-slate-300 text-blue-600 focus:ring-blue-200" %></td>
                     </tr>

@@ -65,6 +65,13 @@
         <%= f.label :ai_prompt_hint, class: "mb-1 block text-sm font-medium text-slate-700" %>
         <%= f.text_area :ai_prompt_hint, rows: 2, class: "w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
       </div>
+      <div class="md:col-span-2">
+        <%= f.label :linked_field_keys, "Linked Question Cluster", class: "mb-1 block text-sm font-medium text-slate-700" %>
+        <% linked_options = @flow.intake_fields.active.order(:ask_priority).reject { |candidate| candidate.id == @field.id || candidate.key == @field.key }.map { |candidate| ["#{candidate.label} (#{candidate.key})", candidate.key] } %>
+        <% selector_size = [ [ linked_options.size, 2 ].max, 8 ].min %>
+        <%= f.select :linked_field_keys, options_for_select(linked_options, @field.linked_field_keys), {}, multiple: true, size: selector_size, class: "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>
+        <p class="mt-1 text-xs text-slate-500">These fields will be suggested as a single multi-question cluster when still outstanding.</p>
+      </div>
       <div>
         <%= label_tag "intake_field_validation_rules_text", "Validation Rules JSON", class: "mb-1 block text-sm font-medium text-slate-700" %>
         <%= text_area_tag "intake_field[validation_rules_text]", JSON.pretty_generate(@field.validation_rules_json || {}), rows: 5, class: "w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs text-slate-800 focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100" %>

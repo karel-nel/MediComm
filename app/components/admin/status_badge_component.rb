@@ -8,6 +8,8 @@ module Admin
     private
 
     def label
+      return "Needs confirmation" if @value == "candidate"
+
       @value.to_s.humanize
     end
 

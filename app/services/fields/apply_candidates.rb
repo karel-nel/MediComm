@@ -1,6 +1,9 @@
+require "set"
+
 module Fields
   class ApplyCandidates
     AUTO_COMPLETE_CONFIDENCE = 0.92
+    STRICT_IDENTIFIER_AUTO_COMPLETE_CONFIDENCE = 0.90
     CLARIFICATION_CONFIDENCE = 0.75
 
     BOOLEAN_TRUE_VALUES = %w[true t yes y 1].freeze
@@ -24,6 +27,7 @@ module Fields
 
     def call
       flow_fields_by_key = @intake_session.intake_flow.intake_fields.active.index_by(&:key)
+      asked_field_keys = currently_asked_field_keys
       rejected_keys = []
       applied_values = []
 
@@ -44,12 +48,21 @@ module Fields
           validation_result = validate_and_normalize_value(field: field, raw_value: raw_value)
           normalized_value = validation_result[:value]
           confidence = normalize_confidence(candidate_hash[:confidence] || candidate_hash["confidence"])
+          latest_value = latest_active_value(field)
           status = status_for_candidate(
             field: field,
             confidence: confidence,
-            validation_errors: validation_result[:errors]
+            validation_errors: validation_result[:errors],
+            latest_value: latest_value,
+            normalized_value: normalized_value,
+            asked_field_keys: asked_field_keys
           )
-          latest_value = latest_active_value(field)
+
+          if same_value?(latest_value, normalized_value) &&
+              (latest_value&.status_complete? || latest_value&.status_inferred?)
+            applied_values << latest_value
+            next
+          end
 
           if latest_value&.canonical_value_text.to_s.strip == normalized_value &&
               latest_value&.status.to_s == status.to_s
@@ -111,11 +124,22 @@ module Fields
       value
     end
 
-    def status_for_candidate(field:, confidence:, validation_errors:)
+    def status_for_candidate(field:, confidence:, validation_errors:, latest_value:, normalized_value:, asked_field_keys:)
       return :rejected if validation_errors.any?
 
-      complete_threshold = strict_identifier_field?(field) ? 0.96 : AUTO_COMPLETE_CONFIDENCE
+      complete_threshold = strict_identifier_field?(field) ? STRICT_IDENTIFIER_AUTO_COMPLETE_CONFIDENCE : AUTO_COMPLETE_CONFIDENCE
       return :complete if confidence >= complete_threshold
+      return :complete if asked_field_confirmation_promotes_to_complete?(
+        field: field,
+        confidence: confidence,
+        asked_field_keys: asked_field_keys
+      )
+      return :complete if confirmation_promotes_to_complete?(
+        field: field,
+        latest_value: latest_value,
+        normalized_value: normalized_value,
+        confidence: confidence
+      )
       return :candidate if confidence >= CLARIFICATION_CONFIDENCE
 
       :needs_clarification
@@ -124,6 +148,33 @@ module Fields
     def strict_identifier_field?(field)
       key = field.key.to_s
       key.match?(/(^|_)id($|_)/) || key.end_with?("_id_number") || validation_type_for(field) == "za_id_number"
+    end
+
+    def confirmation_promotes_to_complete?(field:, latest_value:, normalized_value:, confidence:)
+      return false if strict_identifier_field?(field)
+      return false if confidence < CLARIFICATION_CONFIDENCE
+      return false if latest_value.blank?
+      return false unless latest_value.status_candidate? || latest_value.status_needs_clarification?
+      return false unless same_value?(latest_value, normalized_value)
+
+      true
+    end
+
+    def asked_field_confirmation_promotes_to_complete?(field:, confidence:, asked_field_keys:)
+      return false if strict_identifier_field?(field)
+      return false unless asked_field_keys.include?(field.key)
+      return false if confidence < CLARIFICATION_CONFIDENCE
+
+      true
+    end
+
+    def currently_asked_field_keys
+      recommendation = Conversation::SelectNextAsk.call(intake_session: @intake_session)
+      Array(recommendation&.dig(:field_keys)).map(&:to_s).to_set
+    end
+
+    def same_value?(latest_value, normalized_value)
+      latest_value&.canonical_value_text.to_s.strip.casecmp?(normalized_value.to_s.strip)
     end
 
     def validate_and_normalize_value(field:, raw_value:)
